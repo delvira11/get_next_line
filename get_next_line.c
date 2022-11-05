@@ -6,10 +6,9 @@
 /*   By: delvira- <delvira-@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/10/24 22:05:43 by delvira-          #+#    #+#             */
-/*   Updated: 2022/11/01 03:14:24 by delvira-         ###   ########.fr       */
+/*   Updated: 2022/11/05 20:40:55 by delvira-         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
 
 #include "get_next_line.h"
 #include <string.h>
@@ -23,16 +22,23 @@ char	*ft_readline(int fd, char *stash)
 	buf = malloc((BUFFER_SIZE + 1) * sizeof(char));
 	if (!buf)
 		return (NULL);
-	while (ft_strchr(buf, '\n') == 0 && n_bytes != 0)
+	while (!ft_strchr(stash, '\n') && n_bytes != 0)
 	{
 		n_bytes = read(fd, buf, BUFFER_SIZE);
+		if (n_bytes == -1)
+		{
+			free(buf);
+			free(stash);
+			return (NULL);
+		}
 		buf[n_bytes] = '\0';
 		stash = ft_strjoin(stash, buf);
+		if (!stash)
+			break ;
 	}
 	free (buf);
 	return (stash);
 }
-
 
 char	*ft_get_line(char *stash)
 {
@@ -52,36 +58,37 @@ char	*ft_get_line(char *stash)
 		i++;
 	}
 	str[i] = stash[i];
-	if(str[i] == '\n')
-		str[i+1] = '\0';
+	if (str[i] == '\n')
+		str[i + 1] = '\0';
 	return (str);
 }
 
 char	*ft_leftstr(char *stash)
 {
-	//crear y liberar memoria
 	char	*str;
-	char	*str2;
 	int		i;
+	int		j;
 
 	i = 0;
-	while (stash[i] != '\n' && stash[i] != '\0')
+	while (stash[i] != '\0' && stash[i] != '\n')
 		i++;
-	str2 = malloc((ft_strlen(stash) - i + 1) * sizeof(char));
-	if (!str2)
-		return (NULL);
-	str = ft_strchr(stash, '\n');
-	if (!str)
-		return(NULL);
-	if (str[0] == '\n')
+	if (!stash[i])
 	{
-		str2 = &str[1];
+		free(stash);
+		return (NULL);
 	}
-	i = 0;
-	while (str2[i] != '\0')
-		i++;
-	str2[i] = '\0';
-	return (str2);	
+	str = malloc((ft_strlen(stash) - i + 1) * sizeof(char));
+	if (!str)
+		return (NULL);
+	i++;
+	j = 0;
+	while (stash[i] != '\0')
+	{
+		str[j++] = stash[i++];
+	}
+	str[j] = '\0';
+	free(stash);
+	return (str);
 }
 
 char	*get_next_line(int fd)
@@ -89,27 +96,28 @@ char	*get_next_line(int fd)
 	static char	*stash = 0;
 	char		*line;
 
+	if (fd < 0 || BUFFER_SIZE <= 0)
+		return (0);
 	stash = ft_readline(fd, stash);
-	if (*stash == '\0')
+	if (!stash)
+	{
+		free (stash);
 		return (NULL);
+	}
 	line = ft_get_line(stash);
 	stash = ft_leftstr(stash);
 	return (line);
 }
 
-int	main(void)
-{
-	char	*amd;
-
-	amd = get_next_line(0);
-	printf("%s", amd);
-	amd = get_next_line(0);
-	printf("%s", amd);
-	amd = get_next_line(0);
-	printf("%s", amd);
-	amd = get_next_line(0);
-	printf("%s", amd);
-	system("leaks -q a.out");
-	free(amd);
-	return (0);
-}
+// int	main(void)
+// {
+// 	char	*str;
+// 	int fd = open("test", O_RDONLY);
+// 	while (str)
+// 	{
+// 		str = get_next_line(fd);
+// 		printf("\n%s", str);
+// 	}
+// 	system("leaks -q a.out");
+// 	return (0);
+// }
